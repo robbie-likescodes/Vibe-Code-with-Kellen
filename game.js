@@ -379,10 +379,22 @@ function update(dt) {
   }
 
   dog.vy += physics.gravity * dt;
+  const prevDogY = dog.y;
   dog.y += dog.vy * dt;
-  const groundY = H - 150;
-  if (dog.y >= groundY) {
-    dog.y = groundY;
+  const baseGroundY = H - 150;
+  let supportY = baseGroundY;
+  let onDebris = false;
+  for (const d of alienDebris) {
+    const topY = d.y - dog.h;
+    const horizontalOverlap = dog.x + dog.w > d.x + 8 && dog.x < d.x + d.w - 8;
+    const crossedTop = prevDogY <= topY && dog.y >= topY;
+    if (horizontalOverlap && crossedTop && dog.vy >= 0) {
+      supportY = Math.min(supportY, topY);
+      onDebris = true;
+    }
+  }
+  if (dog.y >= supportY) {
+    dog.y = supportY;
     if (!dog.wasGrounded) {
       const impact = Math.min(1, Math.abs(dog.vy) / 1100);
       dog.vy = -100 * impact;
@@ -391,7 +403,7 @@ function update(dt) {
       for (let i = 0; i < 8 + impact * 18; i++) {
         particles.push({
           x: dog.x + dog.w / 2,
-          y: groundY + dog.h,
+          y: supportY + dog.h,
           vx: (Math.random() - 0.5) * (220 + impact * 200),
           vy: -40 - Math.random() * 120,
           life: 0.2 + Math.random() * 0.2,
@@ -402,6 +414,15 @@ function update(dt) {
       dog.vy = 0;
     }
     dog.grounded = true;
+    if (onDebris) {
+      for (const d of alienDebris) {
+        const standingOnDebris = Math.abs((dog.y + dog.h) - d.y) < 2 && dog.x + dog.w > d.x + 8 && dog.x < d.x + d.w - 8;
+        if (standingOnDebris) {
+          dog.x -= d.speed * dt;
+          break;
+        }
+      }
+    }
   } else {
     dog.grounded = false;
   }
@@ -485,7 +506,9 @@ function update(dt) {
 
   alienDebris.forEach((d) => {
     d.x -= d.speed * dt;
-    if (!d.triggered && dog.grounded && Math.abs((dog.x + dog.w / 2) - (d.x + d.w / 2)) < 54) {
+    const isStandingOnDebris = dog.grounded && Math.abs((dog.y + dog.h) - d.y) < 2 && dog.x + dog.w > d.x + 8 && dog.x < d.x + d.w - 8;
+    const interactPressed = keys.has('w') || keys.has('arrowup');
+    if (!d.triggered && isStandingOnDebris && interactPressed) {
       d.triggered = true;
       startCombat(Math.random() < 0.5 ? 'small' : 'big');
     }
