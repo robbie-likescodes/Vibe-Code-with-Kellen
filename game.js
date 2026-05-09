@@ -615,9 +615,22 @@ function drawDog() {
     shell.addColorStop(0.55, '#535e6f');
     shell.addColorStop(1, '#2c323d');
   }
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 8;
   ctx.fillStyle = shell;
   ctx.beginPath();
   ctx.roundRect(6, 8, 46, 24, 8);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  const bodySpecular = ctx.createLinearGradient(8, 8, 44, 26);
+  bodySpecular.addColorStop(0, 'rgba(255,255,255,0.45)');
+  bodySpecular.addColorStop(0.35, 'rgba(255,255,255,0.16)');
+  bodySpecular.addColorStop(1, 'rgba(255,255,255,0.02)');
+  ctx.fillStyle = bodySpecular;
+  ctx.beginPath();
+  ctx.roundRect(10, 10, 34, 9, 5);
   ctx.fill();
   ctx.fillStyle = 'rgba(24, 29, 39, 0.45)';
   ctx.beginPath();
@@ -635,11 +648,26 @@ function drawDog() {
   ctx.beginPath();
   ctx.ellipse(53, 20, 5, 4, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.beginPath();
+  ctx.ellipse(51, 18.5, 1.4, 1.1, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.fillStyle = '#3b434f';
+  const legGrad = ctx.createLinearGradient(0, 30, 0, 42);
+  legGrad.addColorStop(0, '#5f6875');
+  legGrad.addColorStop(1, '#232a35');
+  ctx.fillStyle = legGrad;
   ctx.fillRect(12, 30, 9, 12);
   ctx.fillRect(34, 30, 9, 12);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(12, 39, 9, 3);
+  ctx.fillRect(34, 39, 9, 3);
   ctx.fillStyle = '#d6a75d';
   ctx.fillRect(4, 15, 4, 7);
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.roundRect(45, 13, 14, 4, 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -660,8 +688,9 @@ function draw() {
     ctx.ellipse(o.x + o.w * 0.6, o.y + o.h + 12, o.w * 0.62, 10, -0.12, 0, Math.PI * 2);
     ctx.fill();
     const meteor = ctx.createLinearGradient(o.x, o.y, o.x + o.w, o.y + o.h);
-    meteor.addColorStop(0, '#8e8479');
-    meteor.addColorStop(1, '#4d433a');
+    meteor.addColorStop(0, '#b2a595');
+    meteor.addColorStop(0.45, '#706356');
+    meteor.addColorStop(1, '#372f29');
     ctx.fillStyle = meteor;
     ctx.beginPath();
     ctx.roundRect(o.x, o.y, o.w, o.h, 13);
@@ -672,6 +701,18 @@ function draw() {
     ctx.beginPath();
     ctx.roundRect(o.x + 6, o.y + 8, o.w * 0.42, o.h * 0.2, 8);
     ctx.fill();
+    ctx.fillStyle = 'rgba(22,14,9,0.24)';
+    ctx.beginPath();
+    ctx.roundRect(o.x + o.w * 0.45, o.y + o.h * 0.42, o.w * 0.42, o.h * 0.5, 7);
+    ctx.fill();
+    for (let i = 0; i < 4; i++) {
+      const rx = o.x + 10 + ((i * 17) % Math.max(12, (o.w - 20)));
+      const ry = o.y + 12 + i * (o.h * 0.2);
+      ctx.fillStyle = 'rgba(240,227,210,0.08)';
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, 5 + (i % 2) * 2, 2.4 + (i % 3) * 0.4, (i * 0.9) % Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
     if (o.ring) {
       ctx.strokeStyle = 'rgba(161,201,229,0.6)';
       ctx.lineWidth = 5;
@@ -683,11 +724,19 @@ function draw() {
 
   alienDebris.forEach((d) => {
     const debrisGrad = ctx.createLinearGradient(d.x, d.y, d.x + d.w, d.y + d.h);
-    debrisGrad.addColorStop(0, '#6e6258');
-    debrisGrad.addColorStop(1, '#3d3630');
+    debrisGrad.addColorStop(0, '#988875');
+    debrisGrad.addColorStop(0.55, '#5f5245');
+    debrisGrad.addColorStop(1, '#2c2520');
     ctx.fillStyle = debrisGrad;
     ctx.beginPath();
     ctx.roundRect(d.x, d.y, d.w, d.h, 10);
+    ctx.fill();
+    const deckSheen = ctx.createLinearGradient(d.x, d.y + 2, d.x, d.y + d.h * 0.4);
+    deckSheen.addColorStop(0, 'rgba(255,255,255,0.32)');
+    deckSheen.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = deckSheen;
+    ctx.beginPath();
+    ctx.roundRect(d.x + 5, d.y + 4, d.w - 10, d.h * 0.28, 8);
     ctx.fill();
     ctx.fillStyle = '#77ffb8';
     ctx.beginPath();
