@@ -234,10 +234,12 @@ function addAlienDebris() {
   alienDebris.push({
     x: W + 30,
     y: H - 148,
+    baseY: H - 148,
     w: 76,
     h: 54,
     speed: 220 + Math.random() * 90,
-    triggered: false
+    triggered: false,
+    floatPhase: Math.random() * Math.PI * 2
   });
 }
 
@@ -485,11 +487,28 @@ function update(dt) {
 
   alienDebris.forEach((d) => {
     d.x -= d.speed * dt;
-    if (!d.triggered && dog.grounded && Math.abs((dog.x + dog.w / 2) - (d.x + d.w / 2)) < 54) {
-      d.triggered = true;
-      startCombat(Math.random() < 0.5 ? 'small' : 'big');
-    }
+    d.floatPhase += dt * 2.2;
+    d.y = d.baseY + Math.sin(d.floatPhase) * 10;
   });
+
+  const dogCenterX = dog.x + dog.w / 2;
+  for (const d of alienDebris) {
+    const topY = d.y - dog.h + 2;
+    const overDeck = dogCenterX > d.x + 4 && dogCenterX < d.x + d.w - 4;
+    const fallingOntoDeck = dog.vy >= 0 && dog.y <= topY + 24 && dog.y >= topY - 30;
+    if (overDeck && fallingOntoDeck) {
+      dog.y = topY;
+      dog.vy = Math.sin(d.floatPhase) * 18;
+      dog.grounded = true;
+      dog.wasGrounded = true;
+      dog.x -= d.speed * dt;
+      if (!d.triggered) {
+        d.triggered = true;
+        startCombat(Math.random() < 0.5 ? 'small' : 'big');
+      }
+      break;
+    }
+  }
 
   const dogBox = { x: dog.x + 10, y: dog.y + 4, w: dog.w - 16, h: dog.h - 8 };
   for (const o of obstacles) if (hit(dogBox, o)) kill();
