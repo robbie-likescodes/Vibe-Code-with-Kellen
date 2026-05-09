@@ -1,0 +1,93 @@
+:root {
+  --bg: #060913;
+  --neon: #6ef7ff;
+  --neon2: #ff4dff;
+  --text: #e8f9ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: "Courier New", monospace;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#gameCanvas {
+  display: block;
+  margin: 0 auto;
+  border: 2px solid #1f2d55;
+  box-shadow: 0 0 20px rgba(110, 247, 255, 0.25);
+  background: radial-gradient(circle at 50% 30%, #161d35 0%, #060913 65%);
+}
+
+#ui {
+  position: fixed;
+  top: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.hud-row {
+  display: flex;
+  gap: 14px;
+}
+
+.hud-box {
+  padding: 8px 14px;
+  border: 1px solid var(--neon);
+  color: var(--neon);
+  text-shadow: 0 0 8px rgba(110, 247, 255, 0.9);
+  background: rgba(5, 10, 20, 0.6);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  z-index: 10;
+  background: rgba(2, 4, 8, 0.82);
+  padding: 20px;
+}
+
+.overlay.visible {
+  display: flex;
+}
+
+h1, h2, h3 {
+  color: var(--neon2);
+  text-shadow: 0 0 10px rgba(255, 77, 255, 0.8);
+  margin: 8px 0;
+}
+
+button {
+  margin-top: 12px;
+  background: transparent;
+  border: 1px solid var(--neon);
+  color: var(--neon);
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:hover {
+  background: rgba(110, 247, 255, 0.15);
+}
+
+#scoreboardList {
+  max-height: 240px;
+  overflow: auto;
+  text-align: left;
+}
