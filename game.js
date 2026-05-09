@@ -622,6 +622,14 @@ function drawDog() {
   ctx.beginPath();
   ctx.roundRect(6, 8, 46, 24, 8);
   ctx.fill();
+  ctx.fillStyle = 'rgba(24, 29, 39, 0.45)';
+  ctx.beginPath();
+  ctx.roundRect(8, 20, 44, 12, 6);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(201, 227, 255, 0.36)';
+  ctx.beginPath();
+  ctx.roundRect(9, 10, 34, 6, 4);
+  ctx.fill();
   ctx.fillStyle = '#b7c0ca';
   ctx.beginPath();
   ctx.roundRect(44, 12, 18, 16, 7);
@@ -650,6 +658,10 @@ function draw() {
   }
 
   obstacles.forEach((o) => {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+    ctx.beginPath();
+    ctx.ellipse(o.x + o.w * 0.6, o.y + o.h + 12, o.w * 0.62, 10, -0.12, 0, Math.PI * 2);
+    ctx.fill();
     const meteor = ctx.createLinearGradient(o.x, o.y, o.x + o.w, o.y + o.h);
     meteor.addColorStop(0, '#8e8479');
     meteor.addColorStop(1, '#4d433a');
@@ -659,6 +671,10 @@ function draw() {
     ctx.fill();
     ctx.strokeStyle = 'rgba(233,220,208,0.45)';
     ctx.stroke();
+    ctx.fillStyle = 'rgba(245, 236, 218, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(o.x + 6, o.y + 8, o.w * 0.42, o.h * 0.2, 8);
+    ctx.fill();
     if (o.ring) {
       ctx.strokeStyle = 'rgba(161,201,229,0.6)';
       ctx.lineWidth = 5;
