@@ -41,11 +41,30 @@ const dog = {
   y: H - 150,
   w: 66,
   h: 44,
+  vx: 0,
   vy: 0,
   grounded: true,
-  jumpCount: 0,
-  maxJumps: 2,
+  tilt: 0,
+  squash: 1,
+  stretch: 1,
+  wasGrounded: true,
+  upHopCooldown: 0,
+  chargeTime: 0,
+  charging: false,
   shotCooldown: 0
+};
+const camera = { y: 0 };
+const physics = {
+  gravity: 1800,
+  moveAccel: 2800,
+  moveDecel: 1800,
+  moveMaxSpeed: 360,
+  airControl: 0.65,
+  baseJump: -640,
+  hopImpulse: -700,
+  chargedJumpMin: -760,
+  chargedJumpMax: -1260,
+  chargeDurationMax: 1.2
 };
 
 let obstacles = [];
@@ -64,18 +83,67 @@ function resetGame() {
   particles = [];
   dog.x = 190;
   dog.y = H - 150;
+  dog.vx = 0;
   dog.vy = 0;
   dog.grounded = true;
-  dog.jumpCount = 0;
+  dog.tilt = 0;
+  dog.squash = 1;
+  dog.stretch = 1;
+  dog.wasGrounded = true;
+  dog.chargeTime = 0;
+  dog.charging = false;
+  dog.upHopCooldown = 0;
   dog.shotCooldown = 0;
+  camera.y = 0;
 }
 
-function jump() {
+function hopUp() {
   if (game.state !== 'playing') return;
-  if (dog.jumpCount >= dog.maxJumps) return;
-  dog.vy = -620;
+  if (dog.upHopCooldown > 0) return;
+  dog.vy = physics.hopImpulse;
   dog.grounded = false;
-  dog.jumpCount += 1;
+  dog.upHopCooldown = 0.12;
+  spawnJumpTrail(10, '#8cf9ff');
+}
+
+function beginCharge() {
+  if (game.state !== 'playing') return;
+  dog.charging = true;
+  dog.chargeTime = 0;
+}
+
+function releaseCharge() {
+  if (game.state !== 'playing' || !dog.charging) return;
+  dog.charging = false;
+  const t = Math.min(1, dog.chargeTime / physics.chargeDurationMax);
+  const launch = physics.chargedJumpMin + (physics.chargedJumpMax - physics.chargedJumpMin) * t;
+  dog.vy = Math.min(dog.vy, launch);
+  dog.grounded = false;
+  dog.stretch = 1.18;
+  spawnJumpTrail(20 + Math.floor(24 * t), '#7ef3ff');
+  for (let i = 0; i < 8 + t * 14; i++) {
+    particles.push({
+      x: dog.x + dog.w / 2,
+      y: dog.y + dog.h * 0.95,
+      vx: (Math.random() - 0.5) * (200 + t * 220),
+      vy: -120 - Math.random() * 280 - t * 180,
+      life: 0.3 + Math.random() * 0.25,
+      c: '#6cf6ff'
+    });
+  }
+}
+
+function spawnJumpTrail(count, color) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: dog.x + 16 + Math.random() * 30,
+      y: dog.y + dog.h - 2 + Math.random() * 10,
+      vx: (Math.random() - 0.5) * 150,
+      vy: -80 - Math.random() * 180,
+      life: 0.22 + Math.random() * 0.25,
+      c: color
+    });
+  }
 }
 
 function shoot() {
@@ -145,21 +213,72 @@ function update(dt) {
 
   game.score += dt * 18;
   dog.shotCooldown = Math.max(0, dog.shotCooldown - dt);
+  dog.upHopCooldown = Math.max(0, dog.upHopCooldown - dt);
 
-  dog.vy += 1300 * dt;
+  const movingLeft = keys.has('a') || keys.has('arrowleft');
+  const movingRight = keys.has('d') || keys.has('arrowright');
+  let targetDir = 0;
+  if (movingLeft) targetDir -= 1;
+  if (movingRight) targetDir += 1;
+  const accel = physics.moveAccel * (dog.grounded ? 1 : physics.airControl);
+  const decel = physics.moveDecel * (dog.grounded ? 1 : 0.55);
+  if (targetDir !== 0) {
+    dog.vx += targetDir * accel * dt;
+  } else if (Math.abs(dog.vx) < decel * dt) {
+    dog.vx = 0;
+  } else {
+    dog.vx -= Math.sign(dog.vx) * decel * dt;
+  }
+  dog.vx = Math.max(-physics.moveMaxSpeed, Math.min(physics.moveMaxSpeed, dog.vx));
+  dog.x = Math.max(40, Math.min(W - 120, dog.x + dog.vx * dt));
+  dog.tilt += (((dog.vx / physics.moveMaxSpeed) * 0.22) - dog.tilt) * Math.min(1, dt * 12);
+
+  if (dog.charging) {
+    dog.chargeTime = Math.min(physics.chargeDurationMax, dog.chargeTime + dt);
+    if (Math.random() < 0.45) {
+      particles.push({
+        x: dog.x + dog.w / 2 + (Math.random() - 0.5) * 24,
+        y: dog.y + dog.h + 4,
+        vx: (Math.random() - 0.5) * 70,
+        vy: -120 - Math.random() * 80,
+        life: 0.14 + Math.random() * 0.2,
+        c: '#92f4ff'
+      });
+    }
+  }
+
+  dog.vy += physics.gravity * dt;
   dog.y += dog.vy * dt;
   const groundY = H - 150;
   if (dog.y >= groundY) {
     dog.y = groundY;
-    dog.vy = 0;
+    if (!dog.wasGrounded) {
+      const impact = Math.min(1, Math.abs(dog.vy) / 1100);
+      dog.vy = -100 * impact;
+      dog.squash = 1 + 0.28 * impact;
+      dog.stretch = 1 - 0.14 * impact;
+      for (let i = 0; i < 8 + impact * 18; i++) {
+        particles.push({
+          x: dog.x + dog.w / 2,
+          y: groundY + dog.h,
+          vx: (Math.random() - 0.5) * (220 + impact * 200),
+          vy: -40 - Math.random() * 120,
+          life: 0.2 + Math.random() * 0.2,
+          c: '#ffe08a'
+        });
+      }
+    } else {
+      dog.vy = 0;
+    }
     dog.grounded = true;
-    dog.jumpCount = 0;
+  } else {
+    dog.grounded = false;
   }
-
-  if (keys.has('arrowup') || keys.has('w')) {
-    // holding up gives tiny thrust feel
-    dog.vy -= 180 * dt;
-  }
+  dog.wasGrounded = dog.grounded;
+  dog.squash += (1 - dog.squash) * Math.min(1, dt * 10);
+  dog.stretch += (1 - dog.stretch) * Math.min(1, dt * 10);
+  const targetCamY = Math.max(-2400, Math.min(0, (H * 0.58) - (dog.y + dog.h * 0.5)));
+  camera.y += (targetCamY - camera.y) * Math.min(1, dt * 5);
 
   game.spawnTimer -= dt;
   if (game.spawnTimer <= 0) {
@@ -246,21 +365,31 @@ function drawSaturnSky() {
 function drawDog() {
   const x = dog.x;
   const y = dog.y;
+  const cx = x + dog.w / 2;
+  const cy = y + dog.h / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(dog.tilt);
+  ctx.scale(dog.stretch, dog.squash);
+  ctx.translate(-dog.w / 2, -dog.h / 2);
   ctx.fillStyle = '#a9b7ff';
-  ctx.fillRect(x + 8, y + 8, 44, 24);
+  ctx.fillRect(8, 8, 44, 24);
   ctx.fillStyle = '#d6e2ff';
-  ctx.fillRect(x + 43, y + 12, 18, 16);
+  ctx.fillRect(43, 12, 18, 16);
   ctx.fillStyle = '#6cf6ff';
-  ctx.fillRect(x + 49, y + 16, 8, 6);
+  ctx.fillRect(49, 16, 8, 6);
   ctx.fillStyle = '#6b7ecf';
-  ctx.fillRect(x + 12, y + 30, 8, 12);
-  ctx.fillRect(x + 35, y + 30, 8, 12);
+  ctx.fillRect(12, 30, 8, 12);
+  ctx.fillRect(35, 30, 8, 12);
   ctx.fillStyle = '#92a3f0';
-  ctx.fillRect(x + 4, y + 14, 6, 7);
+  ctx.fillRect(4, 14, 6, 7);
+  ctx.restore();
 }
 
 function draw() {
   drawSaturnSky();
+  ctx.save();
+  ctx.translate(0, camera.y);
 
   ctx.fillStyle = 'rgba(88,146,255,0.2)';
   for (let i = 0; i < 8; i++) {
@@ -306,13 +435,22 @@ function draw() {
   });
 
   drawDog();
+  if (dog.charging) {
+    const chargeRatio = Math.min(1, dog.chargeTime / physics.chargeDurationMax);
+    ctx.strokeStyle = `rgba(108,246,255,${0.55 + chargeRatio * 0.4})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(dog.x + dog.w / 2, dog.y + dog.h + 14, 8 + chargeRatio * 26, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
 
   ctx.fillStyle = '#e9f7ff';
   ctx.font = '20px monospace';
   ctx.fillText(`Score: ${Math.floor(game.score)}`, 20, 32);
   ctx.fillText(`Best: ${Math.floor(game.best)}`, 20, 58);
   ctx.font = '15px monospace';
-  ctx.fillText('Move: A/D or ←/→  Jump: W/↑ (double jump)  Shoot: Space', 20, H - 20);
+  ctx.fillText('Move: A/D or ←/→  Hop: W/↑  Charged Jump: Hold+Release Space  Shoot: J', 20, H - 20);
 
   if (game.state === 'start') {
     overlay.innerHTML = '<div class="panel"><h1>Saturn Space Dog</h1><p>Jump through ring obstacles and blast enemy drones.</p><p><strong>Press Enter to begin</strong></p></div>';
@@ -339,19 +477,17 @@ window.addEventListener('keydown', (e) => {
     resetGame();
     return;
   }
+  if (k === 'j') shoot();
   if (k === ' ' || k === 'spacebar') {
     e.preventDefault();
-    shoot();
+    if (!e.repeat) beginCharge();
   }
-  if (k === 'w' || k === 'arrowup') jump();
+  if ((k === 'w' || k === 'arrowup') && !e.repeat) hopUp();
 });
-window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
-
-window.addEventListener('keydown', (e) => {
+window.addEventListener('keyup', (e) => {
   const k = e.key.toLowerCase();
-  if (game.state !== 'playing') return;
-  if (k === 'a' || k === 'arrowleft') dog.x = Math.max(40, dog.x - 28);
-  if (k === 'd' || k === 'arrowright') dog.x = Math.min(W - 120, dog.x + 28);
+  keys.delete(k);
+  if (k === ' ' || k === 'spacebar') releaseCharge();
 });
 
 requestAnimationFrame(loop);
