@@ -64,7 +64,9 @@ const physics = {
   hopImpulse: -700,
   chargedJumpMin: -760,
   chargedJumpMax: -1260,
-  chargeDurationMax: 1.2
+  chargeDurationMax: 1.2,
+  rocketBoostMin: 260,
+  rocketBoostMax: 980
 };
 
 let obstacles = [];
@@ -115,9 +117,14 @@ function beginCharge() {
 function releaseCharge() {
   if (game.state !== 'playing' || !dog.charging) return;
   dog.charging = false;
-  const t = Math.min(1, dog.chargeTime / physics.chargeDurationMax);
+  const cycle = dog.chargeTime / physics.chargeDurationMax;
+  const t = Math.abs(Math.sin(cycle * Math.PI * 0.5));
   const launch = physics.chargedJumpMin + (physics.chargedJumpMax - physics.chargedJumpMin) * t;
+  const rocketBoost = physics.rocketBoostMin + (physics.rocketBoostMax - physics.rocketBoostMin) * t;
+  const rocketDirection = dog.vx < -10 ? -1 : 1;
   dog.vy = Math.min(dog.vy, launch);
+  dog.vx += rocketDirection * rocketBoost;
+  dog.vx = Math.max(-physics.moveMaxSpeed * 2.6, Math.min(physics.moveMaxSpeed * 2.6, dog.vx));
   dog.grounded = false;
   dog.stretch = 1.18;
   spawnJumpTrail(20 + Math.floor(24 * t), '#7ef3ff');
@@ -126,7 +133,7 @@ function releaseCharge() {
       x: dog.x + dog.w / 2,
       y: dog.y + dog.h * 0.95,
       vx: (Math.random() - 0.5) * (200 + t * 220),
-      vy: -120 - Math.random() * 280 - t * 180,
+      vy: -100 - Math.random() * 280 - t * 220,
       life: 0.3 + Math.random() * 0.25,
       c: '#6cf6ff'
     });
@@ -445,7 +452,28 @@ function draw() {
 
   drawDog();
   if (dog.charging) {
-    const chargeRatio = Math.min(1, dog.chargeTime / physics.chargeDurationMax);
+    const cycle = dog.chargeTime / physics.chargeDurationMax;
+    const chargeRatio = Math.abs(Math.sin(cycle * Math.PI * 0.5));
+    const arrowLength = 28 + chargeRatio * 96;
+    const arrowX = dog.x + dog.w * 0.5;
+    const arrowY = dog.y + dog.h * 0.68;
+    const arrowDirection = dog.vx < -10 ? -1 : 1;
+
+    ctx.strokeStyle = `rgba(126,243,255,${0.55 + chargeRatio * 0.4})`;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX + arrowDirection * arrowLength, arrowY);
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(126,243,255,${0.65 + chargeRatio * 0.35})`;
+    ctx.beginPath();
+    ctx.moveTo(arrowX + arrowDirection * (arrowLength + 12), arrowY);
+    ctx.lineTo(arrowX + arrowDirection * arrowLength, arrowY - 9);
+    ctx.lineTo(arrowX + arrowDirection * arrowLength, arrowY + 9);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.strokeStyle = `rgba(108,246,255,${0.55 + chargeRatio * 0.4})`;
     ctx.lineWidth = 4;
     ctx.beginPath();
