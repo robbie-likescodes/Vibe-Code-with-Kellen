@@ -156,22 +156,14 @@ function releaseCharge() {
   dog.charging = false;
   const cycle = dog.chargeTime / physics.chargeDurationMax;
   const t = Math.abs(Math.sin(cycle * Math.PI * 0.5));
-  const launch = physics.chargedJumpMin + (physics.chargedJumpMax - physics.chargedJumpMin) * t;
-  const rocketBoost = physics.rocketBoostMin + (physics.rocketBoostMax - physics.rocketBoostMin) * t;
-  const rocketDirection = dog.vx < -10 ? -1 : 1;
-  dog.vy = Math.min(dog.vy, launch);
-  dog.vx += rocketDirection * rocketBoost;
-  dog.vx = Math.max(-physics.moveMaxSpeed * 2.6, Math.min(physics.moveMaxSpeed * 2.6, dog.vx));
-  dog.grounded = false;
-  dog.stretch = 1.18;
-  spawnJumpTrail(20 + Math.floor(24 * t), '#7ef3ff');
-  for (let i = 0; i < 8 + t * 14; i++) {
+  shoot(t);
+  for (let i = 0; i < 8 + t * 10; i++) {
     particles.push({
       x: dog.x + dog.w / 2,
-      y: dog.y + dog.h * 0.95,
-      vx: (Math.random() - 0.5) * (200 + t * 220),
-      vy: -100 - Math.random() * 280 - t * 220,
-      life: 0.3 + Math.random() * 0.25,
+      y: dog.y + dog.h * 0.45,
+      vx: 120 + Math.random() * (220 + t * 280),
+      vy: (Math.random() - 0.5) * (120 + t * 160),
+      life: 0.16 + Math.random() * 0.2,
       c: '#6cf6ff'
     });
   }
@@ -190,11 +182,16 @@ function spawnJumpTrail(count, color) {
   }
 }
 
-function shoot() {
+function shoot(power = 0) {
   if (game.state !== 'playing' || dog.shotCooldown > 0) return;
   const bigGun = powerups.bigGunTimer > 0;
   const spread = bigGun ? [-16, 0, 16] : [0];
-  spread.forEach((off) => lasers.push({ x: dog.x + dog.w * 0.7, y: dog.y + 8 + off * 0.22, vx: 820, life: 1.1, size: bigGun ? 6 : 4 }));
+  const strength = Math.max(0, Math.min(1, power));
+  const shotSize = (bigGun ? 6 : 4) + strength * 3;
+  const shotSpeed = 820 + strength * 420;
+  const shotLife = 1.1 + strength * 0.25;
+  const shotDamage = 1 + Math.round(strength * 2);
+  spread.forEach((off) => lasers.push({ x: dog.x + dog.w * 0.7, y: dog.y + 8 + off * 0.22, vx: shotSpeed, life: shotLife, size: shotSize, damage: shotDamage }));
   dog.shotCooldown = powerups.rapidFireTimer > 0 ? 0.1 : 0.22;
 }
 
@@ -477,7 +474,7 @@ function update(dt) {
     for (const e of enemies) {
       if (Math.hypot(l.x - e.x, l.y - e.y) < e.r + 8) {
         l.life = 0;
-        e.hp -= 1;
+        e.hp -= l.damage || 1;
         particles.push({ x: e.x, y: e.y, vx: (Math.random() - 0.5) * 220, vy: (Math.random() - 0.5) * 220, life: 0.4, c: '#79f7ff' });
       }
     }
@@ -781,7 +778,7 @@ function draw() {
   ctx.font = '18px Inter, sans-serif';
   ctx.fillText(`Best: ${Math.floor(game.best)}`, 24, 60);
   ctx.font = '15px Inter, sans-serif';
-  ctx.fillText('Move: A/D or ←/→  Hop: W/↑  Charged Jump: Hold+Release Space  Shoot: J  Grenade: K', 20, H - 20);
+  ctx.fillText('Move: A/D or ←/→  Hop: W/↑  Charged Shot: Hold+Release Space  Quick Shot: J  Grenade: K', 20, H - 20);
   ctx.font = '14px Inter, sans-serif';
   ctx.fillText(`Orbs -> Gold:${powerups.goldTimer>0?'ON':'--'} Rainbow:${powerups.rainbowTimer>0?'ON':'--'} Big Gun:${powerups.bigGunTimer>0?'ON':'--'} Rapid:${powerups.rapidFireTimer>0?'ON':'--'} Grenades:${powerups.grenadeCount}`, 20, 82);
 
