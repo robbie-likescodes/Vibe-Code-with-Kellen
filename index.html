@@ -7,33 +7,13 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="ui">
-    <div class="hud-row">
-      <div class="hud-box">SCORE: <span id="score">0</span></div>
-      <div class="hud-box">BEST: <span id="best">0</span></div>
-    </div>
+  <div id="gameWrap">
+    <canvas id="gameCanvas" width="960" height="640" aria-label="RoboFrog game canvas"></canvas>
+    <div id="overlay" aria-live="polite"></div>
   </div>
-
-  <div id="startScreen" class="overlay visible">
-    <h1>ROBOFROG:<br />RINGS OF SATURN</h1>
-    <p>Hop with <strong>WASD</strong> or <strong>Arrow Keys</strong>.</p>
-    <p>Aim with mouse, <strong>click</strong> to fire laser.</p>
-    <p>Land on moving platforms. Fall into space = game over.</p>
-    <p>Hit drones for bonus points, avoid touching them.</p>
-    <button id="startBtn">START MISSION</button>
-  </div>
-
-  <div id="gameOverScreen" class="overlay">
-    <h2>MISSION FAILED</h2>
-    <p>Score: <span id="finalScore">0</span></p>
-    <p>Best: <span id="finalBest">0</span></p>
-    <h3>Top 10 Pilots</h3>
-    <ol id="scoreboardList"></ol>
-    <button id="restartBtn">RETRY (ENTER)</button>
-  </div>
-
-  <canvas id="gameCanvas" width="900" height="700"></canvas>
-
-  <script src="game.js"></script>
+  <noscript>
+    <div class="error">This game needs JavaScript enabled.</div>
+  </noscript>
+  <script src="game.js" defer></script>
 </body>
 </html>
