@@ -1,43 +1,23 @@
-# RoboFrog: Rings of Saturn
+# Saturn Space Dog: Ring Runner
 
-A retro arcade prototype inspired by Crossy Road. You are a robotic frog leaping across Saturn ring lanes made of meteors, ice chunks, satellites, and junk while blasting hostile drones.
+A lightweight browser arcade game set in a Saturn-like environment.
 
 ## How to run
 
-1. Open `index.html` directly in any modern browser.
+1. Open `index.html` in a modern browser.
 2. Press **Enter** to start.
-
-No install, npm, or build steps are required.
 
 ## Controls
 
 - **Enter**: Start / Restart
-- **Arrow Keys** or **WASD**: Hop one tile
-- **Mouse**: Aim
-- **Left Click**: Shoot toward cursor
-- **Space**: Shoot straight upward
+- **A/D** or **Left/Right Arrow**: Move horizontally
+- **W** or **Up Arrow**: Jump (double jump)
+- **Space**: Shoot lasers
 
-## Current features
+## Core gameplay
 
-- Immediate rendering on load with:
-  - animated parallax starfield
-  - large Saturn + ring backdrop
-  - visible title overlay
-  - visible robotic frog and 20+ lanes
-  - moving platforms and visible drones
-- Grid-based frog movement with hop animation and camera follow
-- Multiple lane types and wrapped moving platforms
-- Laser combat with particles and screenshake
-- Drone collisions and falling/game-over logic
-- Scrap collectibles for bonus score
-- Score, best score, and local top-10 scoreboard persistence via `localStorage`
-- Defensive startup checks and visible fallback errors if canvas/context fails
-- Debug line with state/lane/lane-count/drone-count
-
-## Suggested next improvements
-
-- Add sound effects and music toggle
-- Add multiple frog skins and drone variants
-- Improve lane generation for long-run difficulty scaling
-- Add power-ups (shield, rapid fire, slow time)
-- Add mobile touch controls
+- Saturn-style sky with ring visuals and stars
+- Robot space dog player character
+- Random ring obstacles to jump through
+- Flying enemies to blast with lasers
+- Score + local best score persistence
