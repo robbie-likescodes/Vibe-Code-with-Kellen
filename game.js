@@ -73,6 +73,16 @@ let obstacles = [];
 let enemies = [];
 let lasers = [];
 let particles = [];
+let alienDebris = [];
+const combat = {
+  active: false,
+  dogHp: 100,
+  alienHp: 100,
+  dogEnergy: 0,
+  alienEnergy: 0,
+  timer: 0,
+  message: ''
+};
 
 function resetGame() {
   game.state = 'playing';
@@ -83,6 +93,7 @@ function resetGame() {
   enemies = [];
   lasers = [];
   particles = [];
+  alienDebris = [];
   dog.x = 190;
   dog.y = H - 150;
   dog.vx = 0;
@@ -97,6 +108,13 @@ function resetGame() {
   dog.upHopCooldown = 0;
   dog.shotCooldown = 0;
   camera.y = 0;
+  combat.active = false;
+  combat.dogHp = 100;
+  combat.alienHp = 100;
+  combat.dogEnergy = 0;
+  combat.alienEnergy = 0;
+  combat.timer = 0;
+  combat.message = '';
 }
 
 function hopUp() {
@@ -182,6 +200,51 @@ function addEnemy() {
   });
 }
 
+function addAlienDebris() {
+  alienDebris.push({
+    x: W + 30,
+    y: H - 148,
+    w: 76,
+    h: 54,
+    speed: 220 + Math.random() * 90,
+    triggered: false
+  });
+}
+
+function startCombat() {
+  game.state = 'combat';
+  combat.active = true;
+  combat.dogHp = 100;
+  combat.alienHp = 100;
+  combat.dogEnergy = 0;
+  combat.alienEnergy = 0;
+  combat.timer = 0;
+  combat.message = 'Fight!';
+}
+
+function updateCombat(dt) {
+  combat.timer += dt;
+  combat.dogEnergy = Math.min(100, combat.dogEnergy + 34 * dt);
+  combat.alienEnergy = Math.min(100, combat.alienEnergy + 26 * dt);
+  if (Math.random() < 0.015) combat.message = 'Alien is charging plasma!';
+
+  if (combat.alienEnergy >= 42 && Math.random() < 0.04) {
+    combat.alienEnergy -= 42;
+    combat.dogHp = Math.max(0, combat.dogHp - (8 + Math.random() * 10));
+    combat.message = 'Alien strike!';
+  }
+
+  if (combat.dogHp <= 0) {
+    combat.active = false;
+    game.state = 'gameover';
+  } else if (combat.alienHp <= 0) {
+    combat.active = false;
+    game.state = 'playing';
+    game.score += 80;
+    combat.message = 'Alien defeated!';
+  }
+}
+
 function hit(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -216,6 +279,10 @@ function update(dt) {
   });
   particles = particles.filter((p) => p.life > 0);
 
+  if (game.state === 'combat') {
+    updateCombat(dt);
+    return;
+  }
   if (game.state !== 'playing') return;
 
   game.score += dt * 18;
@@ -298,6 +365,7 @@ function update(dt) {
     addEnemy();
     game.enemyTimer = 1.1 + Math.random() * 1.4;
   }
+  if (Math.random() < dt * 0.25 && alienDebris.length < 3) addAlienDebris();
 
   obstacles.forEach((o) => (o.x -= o.speed * dt));
   enemies.forEach((e, i) => {
@@ -328,7 +396,16 @@ function update(dt) {
     return e.x > -80;
   });
   obstacles = obstacles.filter((o) => o.x > -100);
+  alienDebris = alienDebris.filter((d) => d.x > -120);
   lasers = lasers.filter((l) => l.life > 0 && l.x < W + 100);
+
+  alienDebris.forEach((d) => {
+    d.x -= d.speed * dt;
+    if (!d.triggered && dog.grounded && Math.abs((dog.x + dog.w / 2) - (d.x + d.w / 2)) < 54) {
+      d.triggered = true;
+      startCombat();
+    }
+  });
 
   const dogBox = { x: dog.x + 10, y: dog.y + 4, w: dog.w - 16, h: dog.h - 8 };
   for (const o of obstacles) if (hit(dogBox, o)) kill();
@@ -443,6 +520,25 @@ function draw() {
     }
   });
 
+  alienDebris.forEach((d) => {
+    const debrisGrad = ctx.createLinearGradient(d.x, d.y, d.x + d.w, d.y + d.h);
+    debrisGrad.addColorStop(0, '#6e6258');
+    debrisGrad.addColorStop(1, '#3d3630');
+    ctx.fillStyle = debrisGrad;
+    ctx.beginPath();
+    ctx.roundRect(d.x, d.y, d.w, d.h, 10);
+    ctx.fill();
+    ctx.fillStyle = '#77ffb8';
+    ctx.beginPath();
+    ctx.arc(d.x + d.w * 0.52, d.y - 7, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1b513a';
+    ctx.fillRect(d.x + d.w * 0.45, d.y + 3, 14, 14);
+    ctx.fillStyle = '#cffff0';
+    ctx.fillRect(d.x + d.w * 0.48, d.y - 10, 4, 3);
+    ctx.fillRect(d.x + d.w * 0.55, d.y - 10, 4, 3);
+  });
+
   enemies.forEach((e) => {
     ctx.shadowColor = 'rgba(91, 208, 255, 0.8)';
     ctx.shadowBlur = 14;
@@ -525,6 +621,24 @@ function draw() {
   } else {
     overlay.innerHTML = '';
   }
+
+  if (game.state === 'combat') {
+    overlay.innerHTML = `<div class="panel"><h1>Robot Dog vs Alien</h1><p>Electric-style duel activated.</p><p>Attack: F (20 energy) • Heavy: G (45 energy)</p><p>${combat.message}</p><p>Dog HP ${Math.ceil(combat.dogHp)} | Alien HP ${Math.ceil(combat.alienHp)}</p></div>`;
+    ctx.fillStyle = 'rgba(2, 4, 12, 0.7)';
+    ctx.fillRect(150, 160, W - 300, 280);
+    ctx.strokeStyle = '#6ce8ff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(150, 160, W - 300, 280);
+    ctx.fillStyle = '#aeefff';
+    ctx.font = 'bold 34px Inter, sans-serif';
+    ctx.fillText('ROBOT DOG', 210, 230);
+    ctx.fillStyle = '#9dffb9';
+    ctx.fillText('XENO BRAWLER', 570, 230);
+    ctx.fillStyle = '#5fd3ff';
+    ctx.fillRect(210, 252, combat.dogHp * 2.2, 14);
+    ctx.fillStyle = '#7dff97';
+    ctx.fillRect(570, 252, combat.alienHp * 2.2, 14);
+  }
 }
 
 let last = performance.now();
@@ -544,6 +658,19 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (k === 'j') shoot();
+  if (game.state === 'combat') {
+    if (k === 'f' && combat.dogEnergy >= 20) {
+      combat.dogEnergy -= 20;
+      combat.alienHp = Math.max(0, combat.alienHp - (9 + Math.random() * 8));
+      combat.message = 'Dog combo hit!';
+    }
+    if (k === 'g' && combat.dogEnergy >= 45) {
+      combat.dogEnergy -= 45;
+      combat.alienHp = Math.max(0, combat.alienHp - (18 + Math.random() * 12));
+      combat.message = 'Heavy shock bite!';
+    }
+    return;
+  }
   if (k === ' ' || k === 'spacebar') {
     e.preventDefault();
     if (!e.repeat) beginCharge();
