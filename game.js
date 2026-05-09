@@ -56,9 +56,9 @@ const dog = {
 const camera = { y: 0 };
 const physics = {
   gravity: 1800,
-  moveAccel: 2800,
-  moveDecel: 1800,
-  moveMaxSpeed: 360,
+  moveAccel: 1800,
+  moveDecel: 1500,
+  moveMaxSpeed: 250,
   airControl: 0.65,
   baseJump: -640,
   hopImpulse: -700,
