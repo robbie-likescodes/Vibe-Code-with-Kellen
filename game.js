@@ -330,36 +330,46 @@ function update(dt) {
 
 function drawSaturnSky() {
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#120f2d');
-  grad.addColorStop(0.5, '#0b1236');
-  grad.addColorStop(1, '#04060f');
+  grad.addColorStop(0, '#02040b');
+  grad.addColorStop(0.45, '#07172c');
+  grad.addColorStop(1, '#010204');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#d9be7a';
+  ctx.fillStyle = '#756b61';
   ctx.beginPath();
   ctx.arc(planets[0].x, planets[0].y, planets[0].r, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = 'rgba(255,224,154,0.42)';
+  ctx.strokeStyle = 'rgba(157,173,188,0.3)';
   ctx.lineWidth = 30;
   ctx.beginPath();
   ctx.ellipse(planets[0].x, planets[0].y, 210, 62, -0.2, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(255,240,193,0.65)';
+  ctx.strokeStyle = 'rgba(196,211,230,0.42)';
   ctx.lineWidth = 10;
   ctx.beginPath();
   ctx.ellipse(planets[0].x, planets[0].y, 182, 50, -0.2, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.fillStyle = '#6bb8ff';
+  const coldPlanet = ctx.createRadialGradient(planets[1].x - 14, planets[1].y - 20, 8, planets[1].x, planets[1].y, planets[1].r);
+  coldPlanet.addColorStop(0, '#b0cee9');
+  coldPlanet.addColorStop(1, '#36516d');
+  ctx.fillStyle = coldPlanet;
   ctx.beginPath();
   ctx.arc(planets[1].x, planets[1].y, planets[1].r, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = '#fff';
-  stars.forEach((s) => ctx.fillRect(s.x, s.y, s.r, s.r));
+  stars.forEach((s) => {
+    ctx.shadowColor = 'rgba(220,238,255,0.9)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = '#f3f7ff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
 }
 
 function drawDog() {
@@ -372,17 +382,27 @@ function drawDog() {
   ctx.rotate(dog.tilt);
   ctx.scale(dog.stretch, dog.squash);
   ctx.translate(-dog.w / 2, -dog.h / 2);
-  ctx.fillStyle = '#a9b7ff';
-  ctx.fillRect(8, 8, 44, 24);
-  ctx.fillStyle = '#d6e2ff';
-  ctx.fillRect(43, 12, 18, 16);
-  ctx.fillStyle = '#6cf6ff';
-  ctx.fillRect(49, 16, 8, 6);
-  ctx.fillStyle = '#6b7ecf';
-  ctx.fillRect(12, 30, 8, 12);
-  ctx.fillRect(35, 30, 8, 12);
-  ctx.fillStyle = '#92a3f0';
-  ctx.fillRect(4, 14, 6, 7);
+  const shell = ctx.createLinearGradient(0, 0, dog.w, dog.h);
+  shell.addColorStop(0, '#8d98a7');
+  shell.addColorStop(0.55, '#535e6f');
+  shell.addColorStop(1, '#2c323d');
+  ctx.fillStyle = shell;
+  ctx.beginPath();
+  ctx.roundRect(6, 8, 46, 24, 8);
+  ctx.fill();
+  ctx.fillStyle = '#b7c0ca';
+  ctx.beginPath();
+  ctx.roundRect(44, 12, 18, 16, 7);
+  ctx.fill();
+  ctx.fillStyle = '#79e7ff';
+  ctx.beginPath();
+  ctx.ellipse(53, 20, 5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#3b434f';
+  ctx.fillRect(12, 30, 9, 12);
+  ctx.fillRect(34, 30, 9, 12);
+  ctx.fillStyle = '#d6a75d';
+  ctx.fillRect(4, 15, 4, 7);
   ctx.restore();
 }
 
@@ -398,29 +418,33 @@ function draw() {
   }
 
   obstacles.forEach((o) => {
-    ctx.fillStyle = '#8f8ca8';
-    ctx.fillRect(o.x, o.y, o.w, o.h);
-    ctx.strokeStyle = '#dde4ff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(o.x, o.y, o.w, o.h);
+    const meteor = ctx.createLinearGradient(o.x, o.y, o.x + o.w, o.y + o.h);
+    meteor.addColorStop(0, '#8e8479');
+    meteor.addColorStop(1, '#4d433a');
+    ctx.fillStyle = meteor;
+    ctx.beginPath();
+    ctx.roundRect(o.x, o.y, o.w, o.h, 13);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(233,220,208,0.45)';
+    ctx.stroke();
     if (o.ring) {
-      ctx.strokeStyle = 'rgba(255,218,133,0.55)';
-      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(161,201,229,0.6)';
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.ellipse(o.x + o.w / 2, o.y + 16, o.w * 0.85, 10, -0.25, 0, Math.PI * 2);
+      ctx.ellipse(o.x + o.w / 2, o.y + 14, o.w * 0.88, 9, -0.25, 0, Math.PI * 2);
       ctx.stroke();
     }
   });
 
   enemies.forEach((e) => {
-    ctx.shadowColor = 'rgba(255, 80, 170, 0.8)';
+    ctx.shadowColor = 'rgba(91, 208, 255, 0.8)';
     ctx.shadowBlur = 14;
-    ctx.fillStyle = '#ff4da6';
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(e.x - 8, e.y - 3, 16, 6);
+    ctx.fillStyle = '#5f6d7c';
+    ctx.fillRect(e.x - e.r, e.y - 8, e.r * 2, 16);
+    ctx.fillStyle = '#91a8ba';
+    ctx.fillRect(e.x - 7, e.y - e.r, 14, e.r * 2);
+    ctx.fillStyle = '#9ef0ff';
+    ctx.fillRect(e.x - 5, e.y - 2, 10, 4);
     ctx.shadowBlur = 0;
   });
 
@@ -459,15 +483,15 @@ function draw() {
   ctx.strokeStyle = 'rgba(111, 242, 255, 0.85)';
   ctx.strokeRect(14, 12, 210, 60);
   ctx.fillStyle = '#e9f7ff';
-  ctx.font = 'bold 21px monospace';
+  ctx.font = 'bold 21px Inter, sans-serif';
   ctx.fillText(`Score: ${Math.floor(game.score)}`, 24, 36);
-  ctx.font = '18px monospace';
+  ctx.font = '18px Inter, sans-serif';
   ctx.fillText(`Best: ${Math.floor(game.best)}`, 24, 60);
-  ctx.font = '15px monospace';
+  ctx.font = '15px Inter, sans-serif';
   ctx.fillText('Move: A/D or ←/→  Hop: W/↑  Charged Jump: Hold+Release Space  Shoot: J', 20, H - 20);
 
   if (game.state === 'start') {
-    overlay.innerHTML = '<div class="panel"><h1>Saturn Space Dog</h1><p>Jump through ring obstacles and blast enemy drones.</p><p><strong>Press Enter to begin</strong></p></div>';
+    overlay.innerHTML = '<div class="panel"><h1>Orbital Junkyard K9</h1><p>Dash through hyper-real debris fields, ruined satellites, and meteor junk.</p><p><strong>Press Enter to begin</strong></p></div>';
   } else if (game.state === 'gameover') {
     overlay.innerHTML = `<div class="panel"><h1>Mission Failed</h1><p>Score: ${Math.floor(game.score)}</p><p>Best: ${Math.floor(game.best)}</p><p><strong>Press Enter to restart</strong></p></div>`;
   } else {

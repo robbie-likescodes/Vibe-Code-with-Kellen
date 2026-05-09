@@ -19,7 +19,7 @@ body {
     radial-gradient(circle at 85% 85%, rgba(82, 255, 228, 0.2) 0%, transparent 38%),
     radial-gradient(circle at 25% 10%, #131b3a 0%, var(--bg) 42%, #020208 100%);
   color: var(--text);
-  font-family: "Courier New", Courier, monospace;
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
 #gameWrap {
@@ -39,7 +39,7 @@ body {
   border: 3px solid #243a7a;
   box-shadow: inset 0 0 32px rgba(68, 142, 255, 0.25);
   background: #000;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 #overlay {
