@@ -246,6 +246,9 @@ function drawSaturnSky() {
 function drawDog() {
   const x = dog.x;
   const y = dog.y;
+  ctx.strokeStyle = 'rgba(125, 248, 255, 0.9)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + 6, y + 6, 56, 36);
   ctx.fillStyle = '#a9b7ff';
   ctx.fillRect(x + 8, y + 8, 44, 24);
   ctx.fillStyle = '#d6e2ff';
@@ -271,6 +274,9 @@ function draw() {
   obstacles.forEach((o) => {
     ctx.fillStyle = '#8f8ca8';
     ctx.fillRect(o.x, o.y, o.w, o.h);
+    ctx.strokeStyle = '#dde4ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(o.x, o.y, o.w, o.h);
     if (o.ring) {
       ctx.strokeStyle = 'rgba(255,218,133,0.55)';
       ctx.lineWidth = 6;
@@ -281,21 +287,27 @@ function draw() {
   });
 
   enemies.forEach((e) => {
+    ctx.shadowColor = 'rgba(255, 80, 170, 0.8)';
+    ctx.shadowBlur = 14;
     ctx.fillStyle = '#ff4da6';
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.fillRect(e.x - 8, e.y - 3, 16, 6);
+    ctx.shadowBlur = 0;
   });
 
   lasers.forEach((l) => {
+    ctx.shadowColor = '#74f5ff';
+    ctx.shadowBlur = 12;
     ctx.strokeStyle = '#74f5ff';
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(l.x, l.y);
     ctx.lineTo(l.x - 24, l.y);
     ctx.stroke();
+    ctx.shadowBlur = 0;
   });
 
   particles.forEach((p) => {
@@ -307,11 +319,21 @@ function draw() {
 
   drawDog();
 
+  ctx.fillStyle = 'rgba(3, 13, 33, 0.72)';
+  ctx.fillRect(14, 12, 210, 60);
+  ctx.strokeStyle = 'rgba(111, 242, 255, 0.85)';
+  ctx.strokeRect(14, 12, 210, 60);
   ctx.fillStyle = '#e9f7ff';
-  ctx.font = '20px monospace';
-  ctx.fillText(`Score: ${Math.floor(game.score)}`, 20, 32);
-  ctx.fillText(`Best: ${Math.floor(game.best)}`, 20, 58);
+  ctx.font = 'bold 21px monospace';
+  ctx.fillText(`Score: ${Math.floor(game.score)}`, 24, 36);
+  ctx.font = '18px monospace';
+  ctx.fillText(`Best: ${Math.floor(game.best)}`, 24, 60);
   ctx.font = '15px monospace';
+  ctx.fillStyle = 'rgba(2, 8, 26, 0.78)';
+  ctx.fillRect(14, H - 42, 520, 28);
+  ctx.strokeStyle = 'rgba(90, 180, 255, 0.6)';
+  ctx.strokeRect(14, H - 42, 520, 28);
+  ctx.fillStyle = '#d9f7ff';
   ctx.fillText('Move: A/D or ←/→  Jump: W/↑ (double jump)  Shoot: Space', 20, H - 20);
 
   if (game.state === 'start') {
