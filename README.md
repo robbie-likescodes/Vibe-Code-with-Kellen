@@ -1,6 +1,6 @@
-# Saturn Space Dog: Ring Runner
+# Orbital Junkyard: K9 Survivor
 
-A lightweight browser arcade game set in a Saturn-like environment.
+A lightweight browser arcade game set in a hyper-realistic orbital debris field.
 
 ## How to run
 
@@ -16,8 +16,8 @@ A lightweight browser arcade game set in a Saturn-like environment.
 
 ## Core gameplay
 
-- Saturn-style sky with ring visuals and stars
-- Robot space dog player character
-- Random ring obstacles to jump through
-- Flying enemies to blast with lasers
+- Deep-space cinematic sky with realistic lighting
+- Metal-plated robot dog player character
+- Meteorites and satellite wreckage as hazards
+- Patrol drones/satellites to blast with lasers
 - Score + local best score persistence
