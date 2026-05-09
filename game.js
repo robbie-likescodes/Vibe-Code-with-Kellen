@@ -76,6 +76,7 @@ let particles = [];
 let alienDebris = [];
 const combat = {
   active: false,
+  enemyType: 'big',
   dogHp: 100,
   alienHp: 100,
   dogEnergy: 0,
@@ -109,6 +110,7 @@ function resetGame() {
   dog.shotCooldown = 0;
   camera.y = 0;
   combat.active = false;
+  combat.enemyType = 'big';
   combat.dogHp = 100;
   combat.alienHp = 100;
   combat.dogEnergy = 0;
@@ -190,13 +192,16 @@ function addObstacle() {
 }
 
 function addEnemy() {
+  const isBig = Math.random() < 0.3;
+  const radius = isBig ? 32 : 20;
   enemies.push({
     x: W + 30,
     y: 180 + Math.random() * 260,
-    r: 20,
-    vx: 200 + Math.random() * 120,
+    r: radius,
+    type: isBig ? 'big' : 'small',
+    vx: (isBig ? 150 : 200) + Math.random() * (isBig ? 80 : 120),
     phase: Math.random() * Math.PI * 2,
-    hp: 2
+    hp: isBig ? 10 : 3
   });
 }
 
@@ -211,27 +216,35 @@ function addAlienDebris() {
   });
 }
 
-function startCombat() {
+function startCombat(enemyType = 'big') {
   game.state = 'combat';
   combat.active = true;
+  combat.enemyType = enemyType;
   combat.dogHp = 100;
-  combat.alienHp = 100;
+  combat.alienHp = enemyType === 'big' ? 120 : 70;
   combat.dogEnergy = 0;
   combat.alienEnergy = 0;
   combat.timer = 0;
-  combat.message = 'Fight!';
+  combat.message = enemyType === 'big' ? 'Big alien duel!' : 'Small alien duel!';
 }
 
 function updateCombat(dt) {
   combat.timer += dt;
   combat.dogEnergy = Math.min(100, combat.dogEnergy + 34 * dt);
-  combat.alienEnergy = Math.min(100, combat.alienEnergy + 26 * dt);
-  if (Math.random() < 0.015) combat.message = 'Alien is charging plasma!';
+  const alienEnergyRate = combat.enemyType === 'big' ? 30 : 38;
+  combat.alienEnergy = Math.min(100, combat.alienEnergy + alienEnergyRate * dt);
+  if (Math.random() < 0.015) combat.message = combat.enemyType === 'big' ? 'Big alien charging plasma!' : 'Small alien spinning up!';
 
-  if (combat.alienEnergy >= 42 && Math.random() < 0.04) {
-    combat.alienEnergy -= 42;
-    combat.dogHp = Math.max(0, combat.dogHp - (8 + Math.random() * 10));
-    combat.message = 'Alien strike!';
+  if (combat.enemyType === 'big') {
+    if (combat.alienEnergy >= 52 && Math.random() < 0.045) {
+      combat.alienEnergy -= 52;
+      combat.dogHp = Math.max(0, combat.dogHp - (14 + Math.random() * 14));
+      combat.message = 'Big alien plasma smash!';
+    }
+  } else if (combat.alienEnergy >= 28 && Math.random() < 0.07) {
+    combat.alienEnergy -= 28;
+    combat.dogHp = Math.max(0, combat.dogHp - (6 + Math.random() * 7));
+    combat.message = 'Small alien needle burst!';
   }
 
   if (combat.dogHp <= 0) {
@@ -240,7 +253,7 @@ function updateCombat(dt) {
   } else if (combat.alienHp <= 0) {
     combat.active = false;
     game.state = 'playing';
-    game.score += 80;
+    game.score += combat.enemyType === 'big' ? 110 : 60;
     combat.message = 'Alien defeated!';
   }
 }
@@ -403,13 +416,22 @@ function update(dt) {
     d.x -= d.speed * dt;
     if (!d.triggered && dog.grounded && Math.abs((dog.x + dog.w / 2) - (d.x + d.w / 2)) < 54) {
       d.triggered = true;
-      startCombat();
+      startCombat(Math.random() < 0.5 ? 'small' : 'big');
     }
   });
 
   const dogBox = { x: dog.x + 10, y: dog.y + 4, w: dog.w - 16, h: dog.h - 8 };
   for (const o of obstacles) if (hit(dogBox, o)) kill();
-  for (const e of enemies) if (Math.hypot(dog.x + dog.w / 2 - e.x, dog.y + dog.h / 2 - e.y) < e.r + 20) kill();
+  for (const e of enemies) {
+    if (Math.hypot(dog.x + dog.w / 2 - e.x, dog.y + dog.h / 2 - e.y) < e.r + 20) {
+      if (e.type === 'big') {
+        enemies = enemies.filter((candidate) => candidate !== e);
+        startCombat('big');
+        break;
+      }
+      kill();
+    }
+  }
 }
 
 function drawSaturnSky() {
@@ -542,11 +564,11 @@ function draw() {
   enemies.forEach((e) => {
     ctx.shadowColor = 'rgba(91, 208, 255, 0.8)';
     ctx.shadowBlur = 14;
-    ctx.fillStyle = '#5f6d7c';
+    ctx.fillStyle = e.type === 'big' ? '#7b6271' : '#5f6d7c';
     ctx.fillRect(e.x - e.r, e.y - 8, e.r * 2, 16);
-    ctx.fillStyle = '#91a8ba';
+    ctx.fillStyle = e.type === 'big' ? '#b8899f' : '#91a8ba';
     ctx.fillRect(e.x - 7, e.y - e.r, 14, e.r * 2);
-    ctx.fillStyle = '#9ef0ff';
+    ctx.fillStyle = e.type === 'big' ? '#ffb6da' : '#9ef0ff';
     ctx.fillRect(e.x - 5, e.y - 2, 10, 4);
     ctx.shadowBlur = 0;
   });
@@ -623,7 +645,7 @@ function draw() {
   }
 
   if (game.state === 'combat') {
-    overlay.innerHTML = `<div class="panel"><h1>Robot Dog vs Alien</h1><p>Electric-style duel activated.</p><p>Attack: F (20 energy) • Heavy: G (45 energy)</p><p>${combat.message}</p><p>Dog HP ${Math.ceil(combat.dogHp)} | Alien HP ${Math.ceil(combat.alienHp)}</p></div>`;
+    overlay.innerHTML = `<div class="panel"><h1>Robot Dog vs ${combat.enemyType === 'big' ? 'Big Alien' : 'Small Alien'}</h1><p>Electric-style duel activated.</p><p>Attack: F (20 energy) • Heavy: G (45 energy)</p><p>${combat.message}</p><p>Dog HP ${Math.ceil(combat.dogHp)} | Alien HP ${Math.ceil(combat.alienHp)}</p></div>`;
     ctx.fillStyle = 'rgba(2, 4, 12, 0.7)';
     ctx.fillRect(150, 160, W - 300, 280);
     ctx.strokeStyle = '#6ce8ff';
@@ -632,8 +654,8 @@ function draw() {
     ctx.fillStyle = '#aeefff';
     ctx.font = 'bold 34px Inter, sans-serif';
     ctx.fillText('ROBOT DOG', 210, 230);
-    ctx.fillStyle = '#9dffb9';
-    ctx.fillText('XENO BRAWLER', 570, 230);
+    ctx.fillStyle = combat.enemyType === 'big' ? '#ff9fcb' : '#9dffb9';
+    ctx.fillText(combat.enemyType === 'big' ? 'XENO BRUTE' : 'XENO SCOUT', 570, 230);
     ctx.fillStyle = '#5fd3ff';
     ctx.fillRect(210, 252, combat.dogHp * 2.2, 14);
     ctx.fillStyle = '#7dff97';
