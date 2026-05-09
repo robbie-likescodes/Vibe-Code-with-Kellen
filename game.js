@@ -74,6 +74,8 @@ let enemies = [];
 let lasers = [];
 let particles = [];
 let alienDebris = [];
+let orbs = [];
+let grenades = [];
 const combat = {
   active: false,
   enemyType: 'big',
@@ -83,6 +85,14 @@ const combat = {
   alienEnergy: 0,
   timer: 0,
   message: ''
+};
+
+const powerups = {
+  goldTimer: 0,
+  rainbowTimer: 0,
+  bigGunTimer: 0,
+  rapidFireTimer: 0,
+  grenadeCount: 0
 };
 
 function resetGame() {
@@ -95,6 +105,8 @@ function resetGame() {
   lasers = [];
   particles = [];
   alienDebris = [];
+  orbs = [];
+  grenades = [];
   dog.x = 190;
   dog.y = H - 150;
   dog.vx = 0;
@@ -117,6 +129,11 @@ function resetGame() {
   combat.alienEnergy = 0;
   combat.timer = 0;
   combat.message = '';
+  powerups.goldTimer = 0;
+  powerups.rainbowTimer = 0;
+  powerups.bigGunTimer = 0;
+  powerups.rapidFireTimer = 0;
+  powerups.grenadeCount = 0;
 }
 
 function hopUp() {
@@ -175,8 +192,16 @@ function spawnJumpTrail(count, color) {
 
 function shoot() {
   if (game.state !== 'playing' || dog.shotCooldown > 0) return;
-  lasers.push({ x: dog.x + dog.w * 0.7, y: dog.y + 8, vx: 820, life: 1.1 });
-  dog.shotCooldown = 0.22;
+  const bigGun = powerups.bigGunTimer > 0;
+  const spread = bigGun ? [-16, 0, 16] : [0];
+  spread.forEach((off) => lasers.push({ x: dog.x + dog.w * 0.7, y: dog.y + 8 + off * 0.22, vx: 820, life: 1.1, size: bigGun ? 6 : 4 }));
+  dog.shotCooldown = powerups.rapidFireTimer > 0 ? 0.1 : 0.22;
+}
+
+function throwGrenade() {
+  if (game.state !== 'playing' || powerups.grenadeCount <= 0) return;
+  powerups.grenadeCount -= 1;
+  grenades.push({ x: dog.x + dog.w * 0.7, y: dog.y + 16, vx: 420, vy: -360, life: 1.4, exploded: false });
 }
 
 function addObstacle() {
@@ -216,7 +241,22 @@ function addAlienDebris() {
   });
 }
 
-function startCombat(enemyType = 'big') {
+function addOrb() {
+  const types = ['gold', 'rainbow', 'bigGun', 'rapidFire', 'grenade'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  orbs.push({ x: W + 30, y: 150 + Math.random() * 300, r: 14, vx: 220 + Math.random() * 120, type, pulse: Math.random() * Math.PI * 2 });
+}
+
+function applyOrb(type) {
+  if (type === 'gold') powerups.goldTimer = 12;
+  if (type === 'rainbow') powerups.rainbowTimer = 12;
+  if (type === 'bigGun') powerups.bigGunTimer = 14;
+  if (type === 'rapidFire') powerups.rapidFireTimer = 14;
+  if (type === 'grenade') powerups.grenadeCount += 3;
+  game.score += 20;
+}
+
+function startCombat() {
   game.state = 'combat';
   combat.active = true;
   combat.enemyType = enemyType;
@@ -301,6 +341,10 @@ function update(dt) {
   game.score += dt * 18;
   dog.shotCooldown = Math.max(0, dog.shotCooldown - dt);
   dog.upHopCooldown = Math.max(0, dog.upHopCooldown - dt);
+  powerups.goldTimer = Math.max(0, powerups.goldTimer - dt);
+  powerups.rainbowTimer = Math.max(0, powerups.rainbowTimer - dt);
+  powerups.bigGunTimer = Math.max(0, powerups.bigGunTimer - dt);
+  powerups.rapidFireTimer = Math.max(0, powerups.rapidFireTimer - dt);
 
   const movingLeft = keys.has('a') || keys.has('arrowleft');
   const movingRight = keys.has('d') || keys.has('arrowright');
@@ -379,6 +423,7 @@ function update(dt) {
     game.enemyTimer = 1.1 + Math.random() * 1.4;
   }
   if (Math.random() < dt * 0.25 && alienDebris.length < 3) addAlienDebris();
+  if (Math.random() < dt * 0.35 && orbs.length < 4) addOrb();
 
   obstacles.forEach((o) => (o.x -= o.speed * dt));
   enemies.forEach((e, i) => {
@@ -389,6 +434,20 @@ function update(dt) {
   lasers.forEach((l) => {
     l.x += l.vx * dt;
     l.life -= dt;
+  });
+  grenades.forEach((g) => {
+    g.x += g.vx * dt;
+    g.y += g.vy * dt;
+    g.vy += 720 * dt;
+    g.life -= dt;
+    if (!g.exploded && (g.life < 0.2 || g.y > H - 110)) {
+      g.exploded = true;
+      g.life = 0;
+      enemies.forEach((e) => {
+        if (Math.hypot(e.x - g.x, e.y - g.y) < 120) e.hp -= 3;
+      });
+      for (let i = 0; i < 28; i++) particles.push({ x: g.x, y: g.y, vx: (Math.random()-0.5)*380, vy:(Math.random()-0.5)*380, life:0.55, c:'#ffb347' });
+    }
   });
 
   for (const l of lasers) {
@@ -410,7 +469,19 @@ function update(dt) {
   });
   obstacles = obstacles.filter((o) => o.x > -100);
   alienDebris = alienDebris.filter((d) => d.x > -120);
+  orbs = orbs.filter((o) => o.x > -80);
   lasers = lasers.filter((l) => l.life > 0 && l.x < W + 100);
+  grenades = grenades.filter((g) => g.life > 0);
+
+  orbs.forEach((o) => {
+    o.x -= o.vx * dt;
+    o.pulse += dt * 4;
+    if (Math.hypot(dog.x + dog.w / 2 - o.x, dog.y + dog.h / 2 - o.y) < o.r + 24) {
+      applyOrb(o.type);
+      for (let j = 0; j < 18; j++) particles.push({ x: o.x, y: o.y, vx: (Math.random() - 0.5) * 280, vy: (Math.random() - 0.5) * 280, life: 0.45, c: '#9dfffe' });
+      o.x = -999;
+    }
+  });
 
   alienDebris.forEach((d) => {
     d.x -= d.speed * dt;
@@ -489,9 +560,20 @@ function drawDog() {
   ctx.scale(dog.stretch, dog.squash);
   ctx.translate(-dog.w / 2, -dog.h / 2);
   const shell = ctx.createLinearGradient(0, 0, dog.w, dog.h);
-  shell.addColorStop(0, '#8d98a7');
-  shell.addColorStop(0.55, '#535e6f');
-  shell.addColorStop(1, '#2c323d');
+  if (powerups.rainbowTimer > 0) {
+    const t = performance.now() * 0.002;
+    shell.addColorStop(0, `hsl(${(t*130)%360} 95% 62%)`);
+    shell.addColorStop(0.5, `hsl(${(t*130+120)%360} 95% 58%)`);
+    shell.addColorStop(1, `hsl(${(t*130+240)%360} 95% 60%)`);
+  } else if (powerups.goldTimer > 0) {
+    shell.addColorStop(0, '#ffe680');
+    shell.addColorStop(0.55, '#ffbe2e');
+    shell.addColorStop(1, '#b87a00');
+  } else {
+    shell.addColorStop(0, '#8d98a7');
+    shell.addColorStop(0.55, '#535e6f');
+    shell.addColorStop(1, '#2c323d');
+  }
   ctx.fillStyle = shell;
   ctx.beginPath();
   ctx.roundRect(6, 8, 46, 24, 8);
@@ -561,6 +643,18 @@ function draw() {
     ctx.fillRect(d.x + d.w * 0.55, d.y - 10, 4, 3);
   });
 
+  orbs.forEach((o) => {
+    const colors = { gold:'#ffd447', rainbow:'#ff68f2', bigGun:'#72f1ff', rapidFire:'#8bff7a', grenade:'#ff9f66' };
+    const aura = 8 + Math.sin(o.pulse) * 2;
+    ctx.shadowColor = colors[o.type];
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = colors[o.type];
+    ctx.beginPath(); ctx.arc(o.x, o.y, o.r + aura * 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.arc(o.x - 4, o.y - 4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
   enemies.forEach((e) => {
     ctx.shadowColor = 'rgba(91, 208, 255, 0.8)';
     ctx.shadowBlur = 14;
@@ -577,12 +671,21 @@ function draw() {
     ctx.shadowColor = '#74f5ff';
     ctx.shadowBlur = 12;
     ctx.strokeStyle = '#74f5ff';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = l.size || 4;
     ctx.beginPath();
     ctx.moveTo(l.x, l.y);
     ctx.lineTo(l.x - 24, l.y);
     ctx.stroke();
     ctx.shadowBlur = 0;
+  });
+
+  grenades.forEach((g) => {
+    ctx.fillStyle = '#ff8c42';
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd7a8';
+    ctx.fillRect(g.x - 2, g.y - 10, 4, 5);
   });
 
   particles.forEach((p) => {
@@ -634,7 +737,9 @@ function draw() {
   ctx.font = '18px Inter, sans-serif';
   ctx.fillText(`Best: ${Math.floor(game.best)}`, 24, 60);
   ctx.font = '15px Inter, sans-serif';
-  ctx.fillText('Move: A/D or ←/→  Hop: W/↑  Charged Jump: Hold+Release Space  Shoot: J', 20, H - 20);
+  ctx.fillText('Move: A/D or ←/→  Hop: W/↑  Charged Jump: Hold+Release Space  Shoot: J  Grenade: K', 20, H - 20);
+  ctx.font = '14px Inter, sans-serif';
+  ctx.fillText(`Orbs -> Gold:${powerups.goldTimer>0?'ON':'--'} Rainbow:${powerups.rainbowTimer>0?'ON':'--'} Big Gun:${powerups.bigGunTimer>0?'ON':'--'} Rapid:${powerups.rapidFireTimer>0?'ON':'--'} Grenades:${powerups.grenadeCount}`, 20, 82);
 
   if (game.state === 'start') {
     overlay.innerHTML = '<div class="panel"><h1>Orbital Junkyard K9</h1><p>Dash through hyper-real debris fields, ruined satellites, and meteor junk.</p><p><strong>Press Enter to begin</strong></p></div>';
@@ -680,6 +785,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (k === 'j') shoot();
+  if (k === 'k') throwGrenade();
   if (game.state === 'combat') {
     if (k === 'f' && combat.dogEnergy >= 20) {
       combat.dogEnergy -= 20;
