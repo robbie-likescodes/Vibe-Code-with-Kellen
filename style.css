@@ -14,6 +14,7 @@ body {
   min-height: 100vh;
   display: grid;
   place-items: center;
+  perspective: 1200px;
   background:
     radial-gradient(circle at 20% 5%, rgba(112, 163, 255, 0.25) 0%, transparent 35%),
     radial-gradient(circle at 85% 85%, rgba(82, 255, 228, 0.2) 0%, transparent 38%),
@@ -24,13 +25,33 @@ body {
 
 #gameWrap {
   position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(8deg) rotateY(-7deg);
+  transition: transform 260ms ease, box-shadow 260ms ease;
   width: min(96vw, 1200px);
   aspect-ratio: 3 / 2;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(123, 162, 255, 0.45);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 50px rgba(85, 120, 255, 0.32);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 50px rgba(85, 120, 255, 0.32), 0 40px 80px rgba(0, 10, 40, 0.45);
 }
+
+#gameWrap:hover {
+  transform: rotateX(4deg) rotateY(-2deg) translateY(-4px);
+}
+
+#gameWrap::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.15) 70%);
+  transform: translateZ(18px);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.35;
+}
+
 
 #gameCanvas {
   width: 100%;
